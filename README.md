@@ -1,98 +1,110 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# Sprint-1 - Adopción de Dragones
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+## Integrantes de equipo:
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+- Sharon Ortiz - @SOrtizRamirez
+- David Zapata - @DavidZapata1312
+- Juan Quiroz - @Quiro66
 
-## Description
+## Objetivo del Sprint
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+Desarrollar una API REST completa que permita a usuarios autenticados gestionar sus tareas personales mediante operaciones CRUD, con validaciones robustas, documentación Swagger y tests automatizados.
 
-## Project setup
+## Epic — API REST de Adopción de Dragones
 
-```bash
-$ pnpm install
-```
+Como desarrollador del equipo,
+quiero construir una API REST en NestJS que permita crear, leer, actualizar y eliminar recursos relacionados con dragones y cuidadores,
+para gestionar un sistema de adopción en el que cada dragón tenga un único cuidador activo,
+con autenticación, validación, control de roles (admin/cuidador) y persistencia en PostgreSQL.
 
-## Compile and run the project
+## 🎯 Contexto de negocio
 
-```bash
-# development
-$ pnpm run start
+El sistema “DragonKeep” busca conectar dragones en busca de hogar con cuidadores responsables.  
+Cada dragón tiene un perfil (edad, raza, tipo de fuego, nivel de agresividad, etc.) y solo puede ser adoptado por un cuidador a la vez.  
+Los cuidadores deben registrarse, cumplir ciertos requisitos y mantener un registro de las adopciones activas o finalizadas.  
+Los administradores supervisan las adopciones, aprueban o revocan permisos y manejan reportes de bienestar.
 
-# watch mode
-$ pnpm run start:dev
+## 📘 Historias de Usuario
 
-# production mode
-$ pnpm run start:prod
-```
+### HU-1 —  Listar dragones disponibles
+- Rol: cuidador autenticado
+- Endpoint: `GET /dragons?status=available&page=1&limit=10`
+- Criterios:
+  - Sólo dragones con `status=available`.
+  - Filtros por tipo (fire, ice, earth, storm) y edad.
+  - Paginación.
+  - Respuesta: name, breed, age, type, image, status.
 
-## Run tests
+### HU-2 — Registrar un dragón (solo admin)
+- Rol: admin
+- Endpoint: `POST /dragons`
+- Campos: `name, age, type, fire_power, temperament, status` (por defecto `available`)
+- Criterios:
+  - Solo admins.
+  - Validación de duplicados por nombre.
+  - DTOs para validación de campos.
 
-```bash
-# unit tests
-$ pnpm run test
+### HU-3 — Ver detalle de un dragón
+- Rol: cuidador autenticado
+- Endpoint: `GET /dragons/:id`
+- Criterios:
+  - Si está adoptado, mostrar nombre del cuidador actual.
+  - Si no existe, 404.
 
-# e2e tests
-$ pnpm run test:e2e
+### HU-4 — Solicitar adopción
+- Rol: cuidador autenticado
+- Endpoint: `POST /adoptions`
+- Campos: `dragonId` (caretakerId extraído del JWT)
+- Criterios:
+  - Solo si dragon está `available`.
+  - Al aprobarse, dragon → `adopted`; fecha de adopción registrada.
+  - Si ya tiene cuidador, retornar 409 Conflict.
 
-# test coverage
-$ pnpm run test:cov
-```
+### HU-5 — Ver mis dragones adoptados
+- Rol: cuidador autenticado
+- Endpoint: `GET /caretakers/:id/dragons`
+- Criterios:
+  - Solo ver mis propios dragones según JWT.
+  - Mostrar campos básicos y fecha de adopción.
 
-## Deployment
+### HU-6 — Liberar un dragón
+- Rol: cuidador autenticado
+- Endpoint: `PATCH /adoptions/:id/release`
+- Criterios:
+  - Solo el cuidador actual puede liberar.
+  - Estado del dragón → `available`.
+  - Registrar fecha de liberación y guardar historial de adopciones.
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
+### HU-7 — Gestión de cuidadores (solo admin)
+- Rol: admin
+- Endpoints:
+  - `GET /caretakers` — lista paginada
+  - `PATCH /caretakers/:id` — editar
+  - `DELETE /caretakers/:id` — eliminar (marcar `inactive`)
+- Criterios:
+  - Solo admins.
+  - No eliminar si tiene dragones activos; pedir liberación primero.
 
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+### HU-8 — Autenticación y roles
+- Endpoints:
+  - `POST /auth/register` — registro (rol por defecto: `caretaker`)
+  - `POST /auth/login` — login con JWT
+- Criterios:
+  - JWT incluye `role` y `userId`.
+  - Guards para validación de roles.
+  - Contraseñas con bcrypt.
 
-```bash
-$ pnpm install -g @nestjs/mau
-$ mau deploy
-```
+### HU-9 — Validación, documentación y trazabilidad
+- Requisitos técnicos:
+  - Validaciones con `class-validator` y DTOs.
+  - Documentación con `@nestjs/swagger` en `/api/docs`.
+  - Interceptor de logs para auditar acciones CRUD (usuario + timestamp).
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+## 🧩 Extras opcionales
+- Notificaciones (WebSocket o email) al adoptar/liberar.
+- Historial de bienestar: evaluaciones periódicas.
+- Sistema de badges para cuidadores destacados.
+- Integración con IA para descripciones automáticas.
 
-## Resources
+---
 
-Check out a few resources that may come in handy when working with NestJS:
-
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
-
-## Support
-
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
-
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
-
-## License
-
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
