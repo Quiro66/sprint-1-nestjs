@@ -8,7 +8,8 @@ export class Dragon {
   @Column({ unique: true })
   name: string;
   @Column({ type: 'enum', enum: DragonTypes }) type: DragonTypes;
-
   @Column({ type: 'enum', enum: DragonStatus, default: DragonStatus.AVAILABLE })
   status: DragonStatus;
+  @Column()
+  age: number;
 }
