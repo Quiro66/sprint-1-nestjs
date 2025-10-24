@@ -1,12 +1,12 @@
 export enum DragonTypes {
-  FIRE = 'fire',
-  ICE = 'ice',
-  EARTH = 'earth',
-  STORM = 'storm',
+  FIRE = "fire",
+  ICE = "ice",
+  EARTH = "earth",
+  STORM = "storm",
 }
 
 export enum DragonStatus {
-  AVAILABLE = 'available',
-  ADOPTED = 'adopted',
-  INACTIVE = 'inactive',
+  AVAILABLE = "available",
+  ADOPTED = "adopted",
+  INACTIVE = "inactive",
 }

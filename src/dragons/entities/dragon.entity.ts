@@ -1,14 +1,14 @@
-import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
-import { DragonStatus, DragonTypes } from '../dragon.enums';
+import { Entity, PrimaryGeneratedColumn, Column } from "typeorm";
+import { DragonStatus, DragonTypes } from "../dragon.enums";
 
-@Entity('dragons')
+@Entity("dragons")
 export class Dragon {
   @PrimaryGeneratedColumn()
   id: number;
   @Column({ unique: true })
   name: string;
-  @Column({ type: 'enum', enum: DragonTypes }) type: DragonTypes;
-  @Column({ type: 'enum', enum: DragonStatus, default: DragonStatus.AVAILABLE })
+  @Column({ type: "enum", enum: DragonTypes }) type: DragonTypes;
+  @Column({ type: "enum", enum: DragonStatus, default: DragonStatus.AVAILABLE })
   status: DragonStatus;
   @Column()
   age: number;
