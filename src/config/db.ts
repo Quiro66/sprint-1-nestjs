@@ -8,13 +8,13 @@ dotenv.config();
 
 export const AppSourceData = new DataSource({
   type: "postgres",
-  host: process.env.DATABASE_HOST,
-  port: Number(process.env.DATABASE_PORT || 5432),
-  username: process.env.DATABASE_USERNAME,
-  password: process.env.DATABASE_PASSWORD,
-  database: process.env.DATABASE_DATABASE,
+  host: 'localhost',
+  port: Number( 5433),
+  username: 'postgres',
+  password: 'perla',
+  database: 'dragonkeepdb',
   entities: [Dragon, Caretaker, Adoption],
-  synchronize: true, // change it for real project, true only for development
+  synchronize: true, // only in development
   logging: true,
-  migrations: ["dist/migrations/migration/*"], // folder for transpilate migrations
+  migrations: ["dist/migrations/migration/*"],
 });
