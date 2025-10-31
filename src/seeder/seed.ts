@@ -1,4 +1,4 @@
-import { AppSourceData } from '../config/db';
+import { AppSourceData } from '../config/ db';
 import { Dragon } from '../dragons/entities/dragon.entity';
 import { Caretaker } from '../caretakers/entities/caretaker.entity';
 import { dragonsData } from './data/dragons';
