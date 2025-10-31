@@ -41,6 +41,7 @@ async function run() {
       aggressionLevel: 5,
     }),
   ];
+
   await dragonRepo.save(dragons);
   console.log('Dragons seeded.');
 
