@@ -1,5 +1,5 @@
 // src/seed.ts
-import { AppDataSource } from './../data-source';
+import { AppDataSource } from '../data-source';
 import { Dragon, FireType } from '../entities/dragon.entity';
 import { Caretaker, UserRole } from '../entities/caretaker.entity';
 import * as bcrypt from 'bcrypt';
