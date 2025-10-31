@@ -19,14 +19,14 @@ export class DragonsController {
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('admin')
+  @Roles('admin', 'caretaker')
   @Get()
   async findAll(@Query(new ValidationPipe({ transform: true })) query: ListDragonsQueryDto) {
     return this.dragonsService.findAll(query as any);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('admin')
+  @Roles('admin', 'caretaker')
   @Get(':id')
   async findOne(@Param('id') id: string) {
     return this.dragonsService.findOne(id);

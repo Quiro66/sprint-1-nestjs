@@ -6,6 +6,7 @@ import { DragonsModule } from './dragons/dragons.module';
 import { Dragon } from './entities/dragon.entity';
 import { Caretaker } from './entities/caretaker.entity';
 import { Adoption } from './entities/adoption.entity';
+import { AdoptionsModule } from './adoptions/adoptions.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { Adoption } from './entities/adoption.entity';
       synchronize: false,
     }),
     DragonsModule,
+    AdoptionsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
