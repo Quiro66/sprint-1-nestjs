@@ -27,6 +27,66 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 }
 ```
 
+### Guards
+
+Los Guards en NestJS se utilizan para controlar el acceso a rutas o controladores, evaluando si una solicitud puede continuar hacia el manejador.
+Generalmente se emplean para autenticación o autorización (por ejemplo, verificar si un usuario tiene un rol específico).
+
+Un guard implementa la interfaz CanActivate y debe devolver true (permite el acceso) o false (lo deniega).
+También pueden lanzar excepciones como UnauthorizedException o ForbiddenException.
+
+Ejemplo de guard para verificar un rol específico:
+```
+import { Injectable, CanActivate, ExecutionContext, ForbiddenException } from '@nestjs/common';
+import { Reflector } from '@nestjs/core';
+
+@Injectable()
+export class RolesGuard implements CanActivate {
+  constructor(private reflector: Reflector) {}
+
+  canActivate(context: ExecutionContext): boolean {
+    const requiredRoles = this.reflector.get<string[]>('roles', context.getHandler());
+    if (!requiredRoles) {
+      return true;
+    }
+
+    const request = context.switchToHttp().getRequest();
+    const user = request.user;
+
+    const hasRole = requiredRoles.some(role => user?.role === role);
+    if (!hasRole) {
+      throw new ForbiddenException('No tienes permiso para acceder a esta ruta');
+    }
+
+    return true;
+  }
+}
+```
+
+Ejemplo de uso en un controlador:
+
+```
+import { Controller, Get, UseGuards } from '@nestjs/common';
+import { RolesGuard } from './roles.guard';
+import { SetMetadata } from '@nestjs/common';
+
+export const Roles = (...roles: string[]) => SetMetadata('roles', roles);
+
+@Controller('admin')
+@UseGuards(RolesGuard)
+export class AdminController {
+  @Get()
+  @Roles('admin')
+  findAll() {
+    return 'Solo los administradores pueden ver esto';
+  }
+}
+```
+
+### Middleware vs Guard
+- Middleware: corre antes del enrutamiento; suele usarse para logging, CORS, parsing. No tiene acceso a DI.
+- Guard: corre antes del handler; se usa para autenticación/autorizar; permite DI.
+
 ### JWT (JSON Web Token)
 JWT es un token firmado que permite autenticar sin mantener sesión en servidor.
 
@@ -61,9 +121,6 @@ export const GetUser = createParamDecorator(
 );
 ```
 
-### Middleware vs Guard
-- Middleware: corre antes del enrutamiento; suele usarse para logging, CORS, parsing. No tiene acceso a DI.
-- Guard: corre antes del handler; se usa para autenticación/autorizar; permite DI.
 
 ---
 
