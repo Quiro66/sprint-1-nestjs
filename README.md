@@ -163,8 +163,8 @@ quiero solicitar, aprobar o liberar adopciones
 
 ## 🐾 HU-5 — Ver mis dragones adoptados
 
-**Como cuidador autenticado**,  
-quiero listar los dragones que he adoptado  
+**Como cuidador autenticado**,
+quiero listar los dragones que he adoptado
 **para consultar su estado y fechas de adopción.**
 
 ### Endpoint

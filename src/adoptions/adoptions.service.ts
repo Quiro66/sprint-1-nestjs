@@ -77,5 +77,51 @@ export class AdoptionsService {
       return updated;
     });
   }
-}
 
+  /**
+   * List adopted dragons for a given caretaker with pagination and filters.
+   */
+  async findByCaretaker(caretakerId: string, query: { page?: number; limit?: number; status?: string; type?: string }) {
+    const page = Math.max(1, query.page || 1);
+    const limit = Math.min(100, query.limit || 10);
+    const skip = (page - 1) * limit;
+
+    const qb = this.adoptionRepo.createQueryBuilder('adoption')
+      .leftJoinAndSelect('adoption.dragon', 'dragon')
+      .where('adoption.caretakerId = :caretakerId', { caretakerId });
+
+    if (query.status === 'active') {
+      qb.andWhere('adoption.releasedAt IS NULL');
+    } else if (query.status === 'finished') {
+      qb.andWhere('adoption.releasedAt IS NOT NULL');
+    }
+
+    if (query.type) {
+      // Dragon.fireType column is named "fireType"
+      qb.andWhere('dragon.fireType = :type', { type: query.type });
+    }
+
+    const [items, total] = await qb.orderBy('adoption.adoptedAt', 'DESC').skip(skip).take(limit).getManyAndCount();
+
+    const mapped = items.map(a => ({
+      adoptionId: a.id,
+      dragon: {
+        id: a.dragon.id,
+        name: a.dragon.name,
+        age: a.dragon.age,
+        breed: a.dragon.breed,
+        fireType: a.dragon.fireType,
+        status: a.dragon.status,
+      },
+      adoptedAt: a.adoptedAt ? a.adoptedAt.toISOString() : null,
+      releasedAt: a.releasedAt ? a.releasedAt.toISOString() : null,
+    }));
+
+    return {
+      total,
+      page,
+      limit,
+      items: mapped,
+    };
+  }
+}
