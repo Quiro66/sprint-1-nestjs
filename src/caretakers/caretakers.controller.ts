@@ -7,18 +7,55 @@ import {
   ParseIntPipe, 
   DefaultValuePipe,
   ForbiddenException,
-  Request
+  Request,
+  Delete,
+  Patch,
+  Body,
+  UsePipes,
+  ValidationPipe
 } from '@nestjs/common';
 import { CaretakersService } from './caretakers.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
 import { UserRole } from '../entities/caretaker.entity';
+import { UpdateCaretakerDto } from './dto/update-caretaker.dto';
 
 @Controller('caretakers')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class CaretakersController {
   constructor(private readonly caretakersService: CaretakersService) {}
+
+  @Get()
+  @Roles(UserRole.ADMIN)
+  async findAll(
+    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number = 1,
+    @Query('limit', new DefaultValuePipe(10), ParseIntPipe) limit: number = 10
+  ) {
+    return this.caretakersService.findAll(page, limit);
+  }
+
+  @Get(':id')
+  @Roles(UserRole.ADMIN)
+  async findOne(@Param('id') id: string) {
+    return this.caretakersService.findById(id);
+  }
+
+  @Patch(':id')
+  @Roles(UserRole.ADMIN)
+  @UsePipes(new ValidationPipe({ whitelist: true }))
+  async update(
+    @Param('id') id: string,
+    @Body() updateCaretakerDto: UpdateCaretakerDto
+  ) {
+    return this.caretakersService.update(id, updateCaretakerDto);
+  }
+
+  @Delete(':id')
+  @Roles(UserRole.ADMIN)
+  async remove(@Param('id') id: string) {
+    return this.caretakersService.remove(id);
+  }
 
   @Get(':id/dragons')
   @Roles(UserRole.ADMIN, UserRole.CARETAKER)
