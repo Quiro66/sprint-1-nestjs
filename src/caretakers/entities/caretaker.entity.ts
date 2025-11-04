@@ -30,6 +30,6 @@ export class Caretaker extends BaseEntity {
     this.password = await bcrypt.hash(this.password, 10);
   }
 
-  @Column({ name: "current_hashed_refresh_token", nullable: true, select: false })
+  @Column({ name: "current_hashed_refresh_token", nullable: true, select: false, type: 'text' })
   currentHashedRefreshToken?: string | null;
 }

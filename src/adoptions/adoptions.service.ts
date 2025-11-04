@@ -1,6 +1,7 @@
+// typescript
 import { Injectable, NotFoundException, ConflictException, ForbiddenException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource } from 'typeorm';
+import { Repository, DataSource, DeepPartial } from 'typeorm';
 import { Adoption } from './entities/adoption.entity';
 import { Dragon } from '../dragons/entities/dragon.entity';
 import { Caretaker } from '../caretakers/entities/caretaker.entity';
@@ -36,16 +37,17 @@ export class AdoptionsService {
 
       const adoptionRepo = manager.getRepository(Adoption);
 
-      // Crear adopción
-      const adoption = adoptionRepo.create({
-        dragon: dragon,       // RelationId
-        caretakerId: caretaker.id, // RelationId
+      // Crear adopción usando la relación por id (dragonId) para evitar problemas de typings
+      const adoptionData: DeepPartial<Adoption> = {
+        dragonId: lockedDragon.id,
+        caretakerId: caretaker.id,
         status: AdoptionStatus.PENDING,
-        adoptedAt: null,
-        releasedAt: null,
-      });
+        adoptedAt: undefined,
+        releasedAt: undefined,
+      };
 
-      const saved = await adoptionRepo.save(adoption);
+      const adoption = adoptionRepo.create(adoptionData);
+      const saved = await adoptionRepo.save(adoption) as Adoption;
 
       // Recargar la entidad completa con relaciones
       const fullAdoption = await adoptionRepo.findOne({
@@ -134,5 +136,22 @@ export class AdoptionsService {
     });
     if (!adoption) throw new NotFoundException('Adoption not found');
     return adoption;
+  }
+
+  // ---------------- Actualizar adopción (usado por controller)
+  async update(id: number, updateAdoptionDto: Partial<Adoption>): Promise<Adoption> {
+    const adoption = await this.adoptionRepo.findOne({ where: { id } });
+    if (!adoption) throw new NotFoundException(`Adoption #${id} not found`);
+
+    Object.assign(adoption, updateAdoptionDto);
+    return this.adoptionRepo.save(adoption);
+  }
+
+  // ---------------- Eliminar adopción (usado por controller)
+  async remove(id: number): Promise<void> {
+    const adoption = await this.adoptionRepo.findOne({ where: { id } });
+    if (!adoption) throw new NotFoundException(`Adoption #${id} not found`);
+
+    await this.adoptionRepo.remove(adoption);
   }
 }

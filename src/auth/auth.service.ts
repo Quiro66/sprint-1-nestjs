@@ -28,7 +28,7 @@ export class AuthService {
   async findUserByEmailWithPassword(email: string) {
     return this.caretakerRepository.findOne({
       where: { email },
-      select: ['id', 'email', 'password', 'role', 'refreshToken'],
+      select: ['id', 'email', 'password', 'role'],
     });
   }
 
@@ -53,7 +53,7 @@ export class AuthService {
     });
 
     const hashedRefresh = await bcrypt.hash(refreshToken, 10);
-    await this.caretakerRepository.update(user.id, { refreshToken: hashedRefresh });
+    await this.caretakerRepository.update(user.id, { currentHashedRefreshToken: hashedRefresh });
 
     return { access_token: accessToken, refresh_token: refreshToken };
   }
@@ -61,11 +61,11 @@ export class AuthService {
   async validateUserByRefreshToken(sub: string, refreshToken: string) {
     const user = await this.caretakerRepository.findOne({
       where: { id: Number(sub) },
-      select: ['id', 'refreshToken', 'email', 'role', 'password'], // asegurarse de traer refreshToken y password
+      select: ['id', 'currentHashedRefreshToken', 'email', 'role', 'password'], // asegurarse de traer currentHashedRefreshToken y password
     });
-    if (!user || !user.refreshToken) return null;
+    if (!user || !user.currentHashedRefreshToken) return null;
 
-    const isMatch = await bcrypt.compare(refreshToken, user.refreshToken);
+    const isMatch = await bcrypt.compare(refreshToken, user.currentHashedRefreshToken);
     return isMatch ? user : null;
   }
 
@@ -77,7 +77,7 @@ export class AuthService {
   }
 
   async logout(userId: number) {
-    await this.caretakerRepository.update(userId, { refreshToken: undefined });
+    await this.caretakerRepository.update(userId, { currentHashedRefreshToken: null });
     return { message: 'Logout successful' };
   }
 
