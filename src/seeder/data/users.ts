@@ -4,13 +4,13 @@ export const usersData = [
   {
     name: "Master Admin",
     email: "master@gmail.com",
-    password: "123456", // TypeORM hasheará automáticamente
+    password: "12345678", // TypeORM hasheará automáticamente
     role: UserRole.ADMIN,
   },
   {
     name: "Ash Ketchup",
     email: "ash@gmail.com",
-    password: "123456",
+    password: "12345678",
     role: UserRole.CARETAKER,
   },
 ];

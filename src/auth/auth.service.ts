@@ -1,10 +1,14 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, ConflictException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Caretaker } from '../caretakers/entities/caretaker.entity';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
+import { UserRole } from '../caretakers/caretaker.enums';
+
+type JwtPayloadWithRole = { sub: string; role: UserRole };
+type ExpiresIn = import('jsonwebtoken').SignOptions['expiresIn'];
 
 @Injectable()
 export class AuthService {
@@ -15,60 +19,90 @@ export class AuthService {
     private readonly jwtService: JwtService,
   ) {}
 
-  // 1️⃣ Validación básica para JwtStrategy
-  async validateUserById(sub: number) {
-    const user = await this.caretakerRepository.findOne({ where: { id: sub } });
-    if (!user) return null;
-    return user;
+  // ---------------- LOGIN / TOKENS ----------------
+  async validateUserById(sub: string) {
+    const user = await this.caretakerRepository.findOne({ where: { id: Number(sub) } });
+    return user || null;
   }
 
-  // 2️⃣ Login: generar access + refresh tokens
-  async login(user: Caretaker) {
-    const payload = { sub: user.id, role: user.role };
+  async findUserByEmailWithPassword(email: string) {
+    return this.caretakerRepository.findOne({
+      where: { email },
+      select: ['id', 'email', 'password', 'role', 'refreshToken'],
+    });
+  }
 
+  async validatePassword(user: Caretaker, plainPassword: string) {
+    if (!user.password) throw new UnauthorizedException('User password not found');
+    return bcrypt.compare(plainPassword, user.password);
+  }
+
+  async login(user: Caretaker) {
+    const payload: JwtPayloadWithRole = { sub: user.id.toString(), role: user.role };
+
+    const accessExpires = (this.configService.get<string>('JWT_EXPIRATION') ?? '15m') as unknown as ExpiresIn;
     const accessToken = this.jwtService.sign(payload, {
       secret: this.configService.get<string>('JWT_SECRET')!,
-      expiresIn: this.configService.get<string>('JWT_EXPIRATION') || '15m',
+      expiresIn: accessExpires,
     });
 
+    const refreshExpires = (this.configService.get<string>('JWT_REFRESH_EXPIRATION') ?? '7d') as unknown as ExpiresIn;
     const refreshToken = this.jwtService.sign(payload, {
       secret: this.configService.get<string>('JWT_REFRESH_SECRET')!,
-      expiresIn: this.configService.get<string>('JWT_REFRESH_EXPIRATION') || '7d',
+      expiresIn: refreshExpires,
     });
 
-    // Guardar hash del refresh token en BD
     const hashedRefresh = await bcrypt.hash(refreshToken, 10);
     await this.caretakerRepository.update(user.id, { refreshToken: hashedRefresh });
 
-    return {
-      access_token: accessToken,
-      refresh_token: refreshToken,
-    };
+    return { access_token: accessToken, refresh_token: refreshToken };
   }
 
-  // 3️⃣ Validar refresh token recibido
-  async validateUserByRefreshToken(sub: number, refreshToken: string) {
-    const user = await this.caretakerRepository.findOne({ where: { id: sub } });
+  async validateUserByRefreshToken(sub: string, refreshToken: string) {
+    const user = await this.caretakerRepository.findOne({
+      where: { id: Number(sub) },
+      select: ['id', 'refreshToken', 'email', 'role', 'password'], // asegurarse de traer refreshToken y password
+    });
     if (!user || !user.refreshToken) return null;
 
     const isMatch = await bcrypt.compare(refreshToken, user.refreshToken);
-    if (!isMatch) return null;
-
-    return user;
+    return isMatch ? user : null;
   }
 
-  // 4️⃣ Refrescar tokens
   async refreshTokens(userId: number, refreshToken: string) {
-    const user = await this.validateUserByRefreshToken(userId, refreshToken);
+    const user = await this.validateUserByRefreshToken(userId.toString(), refreshToken);
     if (!user) throw new UnauthorizedException('Invalid refresh token');
 
-    return this.login(user); // genera y guarda nuevos tokens
+    return this.login(user);
   }
 
-  // 5️⃣ Logout (revocar refresh token)
   async logout(userId: number) {
-    // Usamos undefined en lugar de null para no romper el tipo
     await this.caretakerRepository.update(userId, { refreshToken: undefined });
     return { message: 'Logout successful' };
+  }
+
+  // ---------------- REGISTER ----------------
+  async registerCaretaker(data: { email: string; password: string; name: string }) {
+    const { email, password, name } = data;
+
+    // Verificar si ya existe el usuario
+    const existingUser = await this.caretakerRepository.findOne({ where: { email } });
+    if (existingUser) throw new ConflictException('User already exists with this email');
+
+    // Hashear contraseña
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Crear nuevo caretaker
+    const newUser = this.caretakerRepository.create({
+      email,
+      password: hashedPassword,
+      name,
+      role: UserRole.CARETAKER, // rol por defecto
+    });
+
+    await this.caretakerRepository.save(newUser);
+
+    // Retornar tokens automáticamente
+    return this.login(newUser);
   }
 }

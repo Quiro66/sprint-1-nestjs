@@ -16,7 +16,7 @@ export class Dragon extends BaseEntity {
     enum: DragonStatus,
     default: DragonStatus.AVAILABLE,
   })
-  status: DragonStatus;
+  status: string;
 
   @Column()
   age: number;
